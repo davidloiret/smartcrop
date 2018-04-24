@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"log"
 	"os"
 
 	"github.com/llgcode/draw2d/draw2dimg"
 	"github.com/llgcode/draw2d/draw2dkit"
 	"gocv.io/x/gocv"
+
+	sclogger "github.com/svkoskin/smartcrop/logger"
 )
 
 type FaceDetector struct {
 	FaceDetectionHaarCascadeFilepath string
-	DebugMode                        bool
+	Logger                           *sclogger.Logger
 }
 
 func (d *FaceDetector) Name() string {
@@ -51,8 +52,8 @@ func (d *FaceDetector) Detect(i *image.RGBA, o *image.RGBA) error {
 
 	gc := draw2dimg.NewGraphicContext(o)
 
-	if d.DebugMode == true {
-		log.Println("Faces detected:", len(faces))
+	if d.Logger.DebugMode == true {
+		d.Logger.Log.Printf("Number of faces detected: %d\n", len(faces))
 	}
 
 	for _, face := range faces {
@@ -63,8 +64,8 @@ func (d *FaceDetector) Detect(i *image.RGBA, o *image.RGBA) error {
 		width := face.Dx()
 		height := face.Dy()
 
-		if d.DebugMode == true {
-			log.Printf("Face: x: %d y: %d w: %d h: %d\n", x, y, width, height)
+		if d.Logger.DebugMode == true {
+			d.Logger.Log.Printf("Face: x: %d y: %d w: %d h: %d\n", x, y, width, height)
 		}
 
 		// Draw a filled circle where the face is

@@ -40,6 +40,7 @@ import (
 	"math"
 	"time"
 
+	sclogger "github.com/svkoskin/smartcrop/logger"
 	"github.com/svkoskin/smartcrop/options"
 
 	"golang.org/x/image/draw"
@@ -97,12 +98,6 @@ type Crop struct {
 	Score Score
 }
 
-// Logger contains a logger.
-type Logger struct {
-	DebugMode bool
-	Log       *log.Logger
-}
-
 /*
 	Detector contains a method that detects either skin, features or saturation. Its Detect method writes
 	the detected skin, features or saturation to red, green and blue channels, respectively.
@@ -114,13 +109,13 @@ type Detector interface {
 
 type smartcropAnalyzer struct {
 	detectors []Detector
-	logger    Logger
+	logger    sclogger.Logger
 	options.Resizer
 }
 
 // NewAnalyzer returns a new Analyzer using the given Resizer.
 func NewAnalyzer(resizer options.Resizer) Analyzer {
-	logger := Logger{
+	logger := sclogger.Logger{
 		DebugMode: false,
 	}
 
@@ -128,7 +123,7 @@ func NewAnalyzer(resizer options.Resizer) Analyzer {
 }
 
 // NewAnalyzerWithLogger returns a new analyzer with the given Resizer and Logger.
-func NewAnalyzerWithLogger(resizer options.Resizer, logger Logger) Analyzer {
+func NewAnalyzerWithLogger(resizer options.Resizer, logger sclogger.Logger) Analyzer {
 	if logger.Log == nil {
 		logger.Log = log.New(ioutil.Discard, "", 0)
 	}
@@ -272,7 +267,7 @@ func score(output *image.RGBA, crop Crop) Score {
 	return score
 }
 
-func analyse(logger Logger, detectors []Detector, img *image.RGBA, cropWidth, cropHeight, realMinScale float64) (image.Rectangle, error) {
+func analyse(logger sclogger.Logger, detectors []Detector, img *image.RGBA, cropWidth, cropHeight, realMinScale float64) (image.Rectangle, error) {
 	o := image.NewRGBA(img.Bounds())
 
 	/*
