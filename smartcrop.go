@@ -54,6 +54,7 @@ var (
 )
 
 const (
+	middleBias              = 0.0004
 	detailWeight            = 0.2
 	skinBias                = 0.9
 	skinBrightnessMin       = 0.2
@@ -285,8 +286,13 @@ func analyse(logger sclogger.Logger, detectors []Detector, img *image.RGBA, crop
 	}
 
 	now := time.Now()
-	var topCrop Crop
-	topScore := -1.0
+
+	// Favor cropping from the middle a bit - sometimes the photographers know what they are doing
+	topCrop := middleCrop(o, cropWidth, cropHeight)
+	topCrop.Score = score(o, topCrop)
+	topScore := topCrop.totalScore() + middleBias
+
+	// Then try the fancy things without that kind of bias
 	cs := crops(o, cropWidth, cropHeight, realMinScale)
 	logger.Log.Println("Time elapsed crops:", time.Since(now), len(cs))
 
@@ -466,6 +472,33 @@ func (d *SaturationDetector) Detect(i *image.RGBA, o *image.RGBA) error {
 		}
 	}
 	return nil
+}
+
+func middleCrop(i image.Image, cropWidth, cropHeight float64) Crop {
+	width := i.Bounds().Dx()
+	height := i.Bounds().Dy()
+
+	minDimension := math.Min(float64(width), float64(height))
+	var cropW, cropH float64
+
+	if cropWidth != 0.0 {
+		cropW = cropWidth
+	} else {
+		cropW = minDimension
+	}
+	if cropHeight != 0.0 {
+		cropH = cropHeight
+	} else {
+		cropH = minDimension
+	}
+
+	scale := maxScale
+	y := float64(height)*0.5 - cropH*scale*0.5
+	x := float64(width)*0.5 - cropW*scale*0.5
+
+	return Crop{
+		Rectangle: image.Rect(int(x), int(y), int(x)+int(cropW*scale), int(y)+int(cropH*scale)),
+	}
 }
 
 func crops(i image.Image, cropWidth, cropHeight, realMinScale float64) []Crop {
